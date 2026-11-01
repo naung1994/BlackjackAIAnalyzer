@@ -31,7 +31,28 @@ jobs:
             exit 1
           fi
           PROJECT_DIR=$(dirname "$(dirname "$APP_DIR")")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"      - name: Fix JVM target compatibility
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path(os.environ["PROJECT_DIR"]) / "app" / "build.gradle"
+          s = p.read_text()
+          s = s.replace(
+              "android {",
+              """android {
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+          """,
+              1
+          )
+          p.write_text(s)
+          PY
 
       - name: Build APK
         run: gradle -p "$PROJECT_DIR" assembleDebug
