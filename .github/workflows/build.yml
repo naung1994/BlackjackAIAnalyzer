@@ -1,3 +1,4 @@
+
 name: Build Android APK
 
 on:
@@ -31,7 +32,9 @@ jobs:
             exit 1
           fi
           PROJECT_DIR=$(dirname "$(dirname "$APP_DIR")")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"      - name: Fix JVM target compatibility
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Fix JVM target compatibility
         run: |
           python3 - <<'PY'
           import os
