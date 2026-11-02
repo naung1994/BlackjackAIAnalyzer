@@ -1,6 +1,4 @@
 
-name: Build Android APK
-
 on:
   push:
     branches: [main]
@@ -32,7 +30,7 @@ jobs:
             exit 1
           fi
           PROJECT_DIR=$(dirname "$(dirname "$APP_DIR")")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
 
       - name: Fix JVM target compatibility
         run: |
