@@ -19,7 +19,7 @@ jobs:
       - name: Extract project ZIP
         run: |
           mkdir -p source
-          unzip -o BlackjackAIAnalyzer_Free_Android_Project.zip -d source
+          unzip -unzip -o BlackjackAIAnalyzer_ScreenCapture_Project.zip -d source
 
       - name: Find Android project
         run: |
