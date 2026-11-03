@@ -1,4 +1,3 @@
-
 name: Build Blackjack AI Analyzer APK
 
 on:
@@ -29,7 +28,7 @@ jobs:
           if [ -f "BlackjackAIAnalyzer_ScreenCapture_Project.zip" ]; then
             unzip -o BlackjackAIAnalyzer_ScreenCapture_Project.zip -d source
           else
-            echo "Project ZIP file not found!"
+            echo "Error: BlackjackAIAnalyzer_ScreenCapture_Project.zip file not found!"
             exit 1
           fi
 
@@ -40,7 +39,7 @@ jobs:
             echo "Error: app/build.gradle not found in extracted ZIP"
             exit 1
           fi
-          PROJECT_DIR=$(dirname $(dirname "$BUILD_GRADLE_PATH"))
+          PROJECT_DIR=$(dirname "$(dirname "$BUILD_GRADLE_PATH")")
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           echo "Found project at: $PROJECT_DIR"
 
@@ -50,17 +49,19 @@ jobs:
           import os
           from pathlib import Path
 
-          project_dir = Path(os.environ["PROJECT_DIR"])
+          project_dir_env = os.environ.get("PROJECT_DIR")
+          if not project_dir_env:
+              print("Error: PROJECT_DIR environment variable is not set.")
+              exit(1)
+
+          project_dir = Path(project_dir_env)
           app_gradle = project_dir / "app" / "build.gradle"
           app_gradle_kts = project_dir / "app" / "build.gradle.kts"
 
-          # Target the existing build file
-          target_file = app_gradle if app_gradle.exists() else app_gradle_kts
+          target_file = app_gradle if app_gradle.exists() else (app_gradle_kts if app_gradle_kts.exists() else None)
 
-          if target_file.exists():
+          if target_file and target_file.exists():
               content = target_file.read_text()
-              
-              # Ensure Java 17 compatibility for MediaProjection & MLKit dependencies
               if "compileOptions" not in content:
                   java17_config = """
               compileOptions {
@@ -74,6 +75,8 @@ jobs:
                   content = content.replace("android {", "android {\n" + java17_config, 1)
                   target_file.write_text(content)
                   print("Updated build.gradle with Java 17 options.")
+          else:
+              print("Warning: build.gradle / build.gradle.kts not found inside app folder.")
           PY
 
       - name: Grant Execute Permission for Gradle Wrapper
