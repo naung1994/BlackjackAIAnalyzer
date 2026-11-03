@@ -173,3 +173,90 @@ class MainActivity : ComponentActivity() {
         history.text = if (lines.isEmpty()) "မှတ်တမ်း မရှိသေးပါ" else lines.joinToString("\n\n")
     }
 }
+package com.ai.blackjackanalyzer
+
+import android.content.Intent
+import android.media.projection.MediaProjectionManager
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
+import android.widget.Button
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var mediaProjectionManager: MediaProjectionManager
+    private var overlayView: FloatingOverlayView? = null
+
+    // Screen Capture ခွင့်ပြုချက် (Permission) တောင်းခံရန် Launcher
+    private val screenCaptureLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            // Screen Capture Service သို့ Intent ပို့ပြီး စတင်ခြင်း
+            val serviceIntent = Intent(this, ScreenCaptureService::class.java).apply {
+                putExtra("RESULT_CODE", result.resultCode)
+                putExtra("DATA", result.data)
+            }
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+
+            // Floating Overlay (မျက်နှာပြင်ပေါ်က အမြဲပေါ်နေမည့် UI) ကို ပြသရန်
+            overlayView = FloatingOverlayView(this)
+            overlayView?.show()
+
+            Toast.makeText(this, "Blackjack AI Analyzer စတင်ပါပြီ", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Screen Capture ခွင့်ပြုချက် ငြင်းပယ်ခံရသည်", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+
+        // အခြား App တွေပေါ်မှာ Overlay တင်ရန် ခွင့်ပြုချက်တောင်းခံခြင်း
+        checkOverlayPermission()
+
+        val btnStart = findViewById<Button>(R.id.btnStartService)
+        val btnStop = findViewById<Button>(R.id.btnStopService)
+
+        // စတင်ရန် ခလုတ်နှိပ်သည့်အခါ
+        btnStart.setOnClickListener {
+            requestScreenCapturePermission()
+        }
+
+        // ရပ်တန့်ရန် ခလုတ်နှိပ်သည့်အခါ
+        btnStop.setOnClickListener {
+            stopService(Intent(this, ScreenCaptureService::class.java))
+            overlayView?.hide()
+            Toast.makeText(this, "AI Analyzer ရပ်တန့်လိုက်ပါပြီ", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun checkOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            }
+        }
+    }
+
+    private fun requestScreenCapturePermission() {
+        val intent = mediaProjectionManager.createScreenCaptureIntent()
+        screenCaptureLauncher.launch(intent)
+    }
+}
